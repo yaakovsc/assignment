@@ -84,3 +84,7 @@
   service:
     name: haproxy
     state: restarted
+
+- name: Enabling HAPROXY start after boot
+  become: yes
+  shell: update-rc.d haproxy defaults
