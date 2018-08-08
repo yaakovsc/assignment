@@ -25,6 +25,15 @@
     protocol: tcp
   become: yes
 
+- name: Accept and allow all traffic destined to port 443
+  iptables:
+    chain: INPUT
+    action: append
+    jump: ACCEPT
+    destination_port: 443
+    protocol: tcp
+  become: yes
+  
 - name: Allowing Loopback Traffic
   iptables:
     chain: INPUT
