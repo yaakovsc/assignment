@@ -1,0 +1,86 @@
+---
+- name: Create HAPROXY user
+  user:
+    name: "{{ haproxy_user }}"
+    shell: /sbin/nologin
+
+- name: Installing HAPROXY Dependencies
+  become: yes
+  apt:
+    name: "{{ item }}"
+    update_cache: yes
+  with_items:
+    - build-essential
+    - libssl-dev
+    - libpcre++-dev
+    - libssl-dev
+    - openssl 
+    - unzip
+
+- name: Downloading HAPROXY sources
+  get_url:
+    url: "{{ haproxy_tarball_url }}"
+    dest: "/tmp/{{ haproxy_version }}.tar.gz"
+  register: haproxy_source
+
+- name: Unpacking HAPROXY
+  unarchive:
+    copy: no
+    dest: /tmp/
+    src: "{{ haproxy_source.dest }}"
+  when: haproxy_source is changed
+  register: haproxy_source_unpack
+
+- name: Create required HAPROXY dir
+  become: yes
+  file:
+    path: /etc/haproxy
+    state: directory
+    owner: root
+    mode: 0755
+
+- name: Compiling HAPROXY source 
+  command: 'make TARGET=linux2628 CPU=native USE_STATIC_PCRE=1 USE_OPENSSL=1 USE_ZLIB=1' 
+  args:
+    chdir: "{{ haproxy_install_dir }}"
+  when: haproxy_source_unpack is changed
+  register: haproxy_configure
+
+- name: Installing HAPROXY
+  become: yes
+  shell: make install
+  args:
+    chdir: "{{ haproxy_install_dir }}"
+  when: haproxy_configure is changed
+
+- name: Creating HAPROXY conf file
+  become: yes
+  template:
+    src: haproxy.cfg
+    dest: "{{ haproxy_conf_path }}"
+    owner: "{{ haproxy_user }}"
+    group: "{{ haproxy_user }}"
+    mode: 0644
+
+- name: Copying SSL cert file 
+  copy:
+    src: /srv/ansible/files/kobi-trial.tk.pem
+    dest: /etc/haproxy/kobi-trial.tk.pem
+    owner: root
+    group: root 
+    mode: 0644
+
+- name: Installing HAPROXY init script (service)
+  become: yes
+  template:
+    src: haproxy.init
+    dest: /etc/init.d/haproxy
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Starting HAPROXY
+  become: yes
+  service:
+    name: haproxy
+    state: restarted

@@ -1,0 +1,30 @@
+---
+
+- name: Compile_nginx_from_sources 
+  hosts: webservers
+  vars:
+    nginx_version: nginx-1.6.2
+    nginx_tarball_url: "http://nginx.org/download/{{ nginx_version }}.tar.gz"
+    nginx_install_dir: "/tmp/{{ nginx_version }}"
+    nginx_sbin_path: "/usr/sbin/nginx"
+    nginx_conf_path: "/etc/nginx/nginx.conf"
+    nginx_custom_modules: "--with-http_auth_request_module"  
+    nginx_user: "nginx"
+  become: yes 
+  gather_facts: True 
+  roles:
+    - create_nginx 
+
+- name: Compile_haproxy_from_sources
+  hosts: loadballancer
+  vars:
+    haproxy_version: haproxy-1.5.12
+    haproxy_tarball_url: "http://www.haproxy.org/download/1.5/src/{{ haproxy_version }}.tar.gz"
+    haproxy_install_dir: "/tmp/{{ haproxy_version }}"
+    haproxy_conf_path: "/etc/haproxy/haproxy.cfg"
+    haproxy_user: "haproxy"
+  become: yes
+  gather_facts: True
+  roles:
+    - create_haproxy
+

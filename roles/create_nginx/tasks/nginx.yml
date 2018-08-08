@@ -1,0 +1,102 @@
+---
+- name: Create nginx user
+  user:
+    name: "{{ nginx_user }}"
+    shell: /sbin/nologin
+
+- name: Installing NGINX Dependencies
+  become: yes
+  apt:
+    name: "{{ item }}"
+    update_cache: yes
+  with_items:
+    - build-essential
+    - libc6
+    - libssl-dev
+    - libpcrecpp0
+    - libssl0.9.8
+    - zlib1g
+    - lsb-base
+    - openssl 
+    - libgeoip1 
+    - libgeoip-dev
+    - google-perftools
+    - libgoogle-perftools-dev
+    - libperl-dev
+    - libgd2-xpm-dev
+    - libatomic-ops-dev
+    - libxml2-dev
+    - libxslt1-dev
+    - python-dev 
+    - zlib1g-dev
+    - libpcre3
+    - libpcre3-dev
+    - unzip
+
+- name: Downloading NGINX sources
+  get_url:
+    url: "{{ nginx_tarball_url }}"
+    dest: "/tmp/{{ nginx_version }}.tar.gz"
+  register: nginx_source
+
+- name: Unpacking NGINX
+  unarchive:
+    copy: no
+    dest: /tmp/
+    src: "{{ nginx_source.dest }}"
+  when: nginx_source is changed
+  register: nginx_source_unpack
+
+- name: Create required Nginx dirs
+  become: yes
+  file:
+    path: /etc/nginx
+    state: directory
+    owner: root
+    mode: 0755
+
+- name: Configuring NGINX source with custom modules
+  command: './configure --user=nginx --group=nginx --sbin-path=/usr/sbin/nginx --conf-path=/etc/nginx/nginx.conf --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --pid-path=/var/run/nginx.pid  --with-rtsig_module --with-select_module --with-poll_module --with-file-aio --with-ipv6 --with-http_ssl_module --with-http_spdy_module --with-http_realip_module --with-http_addition_module --with-http_xslt_module --with-http_image_filter_module --with-http_geoip_module --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_auth_request_module --with-http_random_index_module --with-http_secure_link_module --with-http_degradation_module --with-http_stub_status_module --with-http_perl_module --with-mail --with-mail_ssl_module --with-cpp_test_module  --with-cpu-opt=CPU --with-pcre  --with-pcre-jit  --with-md5-asm  --with-sha1-asm  --with-zlib-asm=CPU --with-libatomic --with-debug --with-ld-opt="-Wl,-E"' 
+  args:
+    chdir: "{{ nginx_install_dir }}"
+  when: nginx_source_unpack is changed
+  register: nginx_configure
+
+- name: Installing NGINX
+  become: yes
+  shell: make && make install
+  args:
+    chdir: "{{ nginx_install_dir }}"
+  when: nginx_configure is changed
+
+- name: Creating NGINX conf file
+  become: yes
+  template:
+    src: nginx.conf
+    dest: "{{ nginx_conf_path }}"
+    owner: "{{ nginx_user }}"
+    group: "{{ nginx_user }}"
+    mode: 0644
+
+- debug: var=ansible_default_ipv4.address
+
+- replace:
+    path: /etc/nginx/nginx.conf
+    regexp: 'HOSTNAME'
+    replace: "{{ ansible_default_ipv4.address }}"
+    backup: yes
+
+- name: Installing NGINX init script (service)
+  become: yes
+  template:
+    src: nginx.init
+    dest: /etc/init.d/nginx
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Starting NGINX
+  become: yes
+  service:
+    name: nginx
+    state: restarted
