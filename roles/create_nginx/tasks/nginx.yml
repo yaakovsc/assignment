@@ -100,3 +100,7 @@
   service:
     name: nginx
     state: restarted
+
+- name: Enabling NGINX start after boot
+  become: yes
+  shell: update-rc.d nginx defaults
