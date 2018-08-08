@@ -1,5 +1,5 @@
 ---
-- name: Installing iptables-persistent 
+- name: Installing iptables-persistent
   become: yes
   apt:
     name: "{{ item }}"
@@ -8,33 +8,33 @@
     - iptables-persistent
 
 - name: Allow all incoming ssh traffic
-  iptables: 
+  iptables:
     chain: INPUT
     action: insert
     jump: ACCEPT
     destination_port: 22
     protocol: tcp
   become: yes
-  
-- name: Accept and allow all traffic destined to port 8080
-  iptables: 
+
+- name: Accept and allow all traffic destined to port 80
+  iptables:
     chain: INPUT
     action: append
     jump: ACCEPT
-    destination_port: 8080
+    destination_port: 80
     protocol: tcp
   become: yes
-  
+
 - name: Allowing Loopback Traffic
-  iptables: 
+  iptables:
     chain: INPUT
     action: insert
     jump: ACCEPT
     in_interface: lo
   become: yes
-  
+
 - name: Allowing DNS tcp Traffic
-  iptables: 
+  iptables:
     chain: INPUT
     action: append
     jump: ACCEPT
@@ -43,7 +43,7 @@
   become: yes
 
 - name: Allowing DNS tcp Traffic
-  iptables: 
+  iptables:
     chain: INPUT
     action: append
     jump: ACCEPT
@@ -55,9 +55,8 @@
 #  iptables:
 #    chain: INPUT
 #    policy: DROP
-#  become: yes
+#  register: set_policy
 
 - name: Saving the rules for REBOOT
   shell: /etc/init.d/iptables-persistent save
-
 
