@@ -1,0 +1,63 @@
+---
+- name: Installing iptables-persistent 
+  become: yes
+  apt:
+    name: "{{ item }}"
+    update_cache: yes
+  with_items:
+    - iptables-persistent
+
+- name: Allow all incoming ssh traffic
+  iptables: 
+    chain: INPUT
+    action: insert
+    jump: ACCEPT
+	destination_port: 22
+	protocol: tcp
+  become: yes
+  
+- name: Set DROP as base policy
+  iptables:
+    chain: INPUT
+    policy: DROP  
+
+- name: Accept and allow all traffic destined to port 8080
+  iptables: 
+    chain: INPUT
+    action: append
+    jump: ACCEPT
+	destination_port: 8080
+	protocol: tcp
+  become: yes
+  
+- name: Allowing Loopback Traffic
+  iptables: 
+    chain: INPUT
+    action: insert
+    jump: ACCEPT
+	in_interface: lo
+  become: yes
+  
+- name: Allowing DNS tcp Traffic
+  iptables: 
+    chain: INPUT
+    action: append
+    jump: ACCEPT
+	destination_port: 53
+	protocol: tcp
+  become: yes
+
+- name: Allowing DNS tcp Traffic
+  iptables: 
+    chain: INPUT
+    action: append
+    jump: ACCEPT
+	destination_port: 53
+	protocol: udp
+  become: yes
+
+- name: Saving the rules for REBOOT
+  command: '/etc/init.d/iptables-persistent save'
+  register: nginx_rules_saved
+
+
