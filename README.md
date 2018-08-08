@@ -1,3 +1,4 @@
+```
 Assignment development worklog:
 
 Intro:
@@ -59,3 +60,4 @@ main.yml
 * When setting IPtables INPUT Policy to DROP, Ansible lost connection. I've commented the step and added it manually after deployment.
 
 
+```
